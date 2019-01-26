@@ -51,6 +51,7 @@ void setup()
     Serial.println("Setup started");
 
     memset(&last_update, 0, sizeof(last_update));
+    pinMode(LED_BUILTIN, OUTPUT);
 
     // Setup received data
     attachInterrupt(digitalPinToInterrupt(MHZ_RECEIVER_PIN), ext_int_1, CHANGE);
@@ -72,6 +73,8 @@ void loop()
     unsigned o = now - last_update.now;
     if (o > 1000)
     {
+        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+
         last_update.now = now;
 
         while (o > 1000)
