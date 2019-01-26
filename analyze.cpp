@@ -328,7 +328,7 @@ void oregon(const char *data)
     size_t len = fromhex(osdata, data);
     uint16_t id = ((osdata[0] & 0xf) << 8) + osdata[1];
 
-    if (id == 0xACC)
+    if (id == 0xACC || id == 0xA2D)
     {
         printf("\nmessage: %03X   len=%zu\ndata: ", id, len);
         prt(osdata, len);
@@ -359,7 +359,7 @@ int main()
             if (fromhex(*c) == 0xFF)
                 break;
         }
-        if (*c == 0)
+        if (*c == 0 && c > buf + 1)
         {
             *c = 0;
             oregon(buf);
