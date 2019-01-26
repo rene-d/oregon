@@ -63,10 +63,10 @@ void loop()
     //------------------------------------------
     // Start process new data from Oregon sensors
     //------------------------------------------
-    noInterrupts();     // Disable interrupts
+    noInterrupts(); // Disable interrupts
     word p = pulse;
     pulse = 0;
-    interrupts();       // Enable interrupts
+    interrupts(); // Enable interrupts
 
     unsigned now = millis();
     unsigned o = now - last_update.now;
@@ -107,23 +107,22 @@ void loop()
                 }
             }
         }
-
     }
 
-if (Serial.available() > 0) {
-                // read the incoming byte:
-                byte incomingByte = Serial.read();
+    if (Serial.available() > 0)
+    {
+        // read the incoming byte:
+        byte incomingByte = Serial.read();
 
-                // say what you got:
-                //Serial.print("I received: ");
-                //Serial.println(incomingByte, DEC);
+        // say what you got:
+        //Serial.print("I received: ");
+        //Serial.println(incomingByte, DEC);
 
-		if (incomingByte == 't')
-{
-	print_hexa(&incomingByte, 0);
-}
-
-}
+        if (incomingByte == 't')
+        {
+            print_hexa(&incomingByte, 0);
+        }
+    }
 
     if (p != 0)
     {
@@ -149,24 +148,31 @@ if (Serial.available() > 0) {
 
 int days_in_month(byte month, byte year)
 {
-    static byte days[] = { 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+    static byte days[] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     if (month == 2)
     {
         // we will never reach 2100™
-        if (year % 4 == 0) return 29;
+        if (year % 4 == 0)
+            return 29;
     }
     return days[month];
 }
-
 
 void print_hexa(const byte *data, byte length)
 {
     char buf[32];
 
+<<<<<<< HEAD
     snprintf(buf, 32, "[%04u/%02u/%02u %02u:%02u:%02u.%03lu]",
         2000 + last_update.year, last_update.month, last_update.day,
         last_update.hour, last_update.minute, last_update.second,
         millis() - last_update.now);
+=======
+    snprintf(buf, 32, "[%04u/%02u/%02u %02u:%02u:%02u.%03u]",
+             2000 + last_update.year, last_update.month, last_update.day,
+             last_update.hour, last_update.minute, last_update.second,
+             millis() - last_update.now);
+>>>>>>> fc017e65048eb85e75bd066a434cffe4128e5e7e
     Serial.println(buf);
 
     for (byte i = 0; i < length; ++i)
