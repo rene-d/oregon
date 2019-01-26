@@ -76,7 +76,7 @@ void loop()
 
         last_update.now = now;
 
-        while (o > 1000)
+        while (o >= 1000)
         {
             o -= 1000;
 
@@ -163,7 +163,7 @@ void print_hexa(const byte *data, byte length)
 {
     char buf[32];
 
-    snprintf(buf, 32, "[%04u/%02u/%02u %02u:%02u:%02u.%03u]",
+    snprintf(buf, 32, "[%04u/%02u/%02u %02u:%02u:%02u.%03lu]",
         2000 + last_update.year, last_update.month, last_update.day,
         last_update.hour, last_update.minute, last_update.second,
         millis() - last_update.now);
