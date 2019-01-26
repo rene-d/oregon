@@ -255,7 +255,6 @@ void decode_AEA(const byte *osdata, size_t len)
         last_update.hour = hour;
         last_update.minute = minute;
         last_update.second = second;
-        last_update.ms = 0;
     }
 
     Serial.print(" id: ");
