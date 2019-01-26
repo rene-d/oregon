@@ -77,7 +77,7 @@ void loop()
 
         current_time.now = now;
 
-        while (o > 1000)
+        while (o >= 1000)
         {
             o -= 1000;
 
