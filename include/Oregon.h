@@ -296,19 +296,20 @@ byte channel(const byte *data)
 }
 
 // Decode data once
-const byte *DataToDecoder(DecodeOOK &decoder)
+const byte *DataToDecoder(DecodeOOK &decoder, byte &length)
 {
-    byte pos;
-    const byte *data = decoder.getData(pos);
+    const byte *data = decoder.getData(length);
+
 #ifdef MY_DEBUG
     //Serial.println("Brute Hexadecimal data from sensor: ");
-    for (byte i = 0; i < pos; ++i)
-    {
-        Serial.print(data[i] >> 4, HEX);
-        Serial.print(data[i] & 0x0F, HEX);
-    }
-    Serial.println();
+    // for (byte i = 0; i < pos; ++i)
+    // {
+    //     Serial.print(data[i] >> 4, HEX);
+    //     Serial.print(data[i] & 0x0F, HEX);
+    // }
+    // Serial.println();
 #endif
+
     decoder.resetDecoder();
     return data;
 }
