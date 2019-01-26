@@ -35,7 +35,6 @@ struct datetime
 {
     byte year, month, day;
     byte hour, minute, second;
-    unsigned ms;
 
     unsigned now;
 };
@@ -71,7 +70,7 @@ void loop()
 
     unsigned now = millis();
     unsigned o = now - last_update.now;
-    if (o > 1000)
+    if (o >= 1000)
     {
         digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
 
@@ -109,8 +108,22 @@ void loop()
             }
         }
 
-        last_update.ms = o;
     }
+
+if (Serial.available() > 0) {
+                // read the incoming byte:
+                byte incomingByte = Serial.read();
+
+                // say what you got:
+                //Serial.print("I received: ");
+                //Serial.println(incomingByte, DEC);
+
+		if (incomingByte == 't')
+{
+	print_hexa(&incomingByte, 0);
+}
+
+}
 
     if (p != 0)
     {
@@ -150,11 +163,11 @@ void print_hexa(const byte *data, byte length)
 {
     char buf[32];
 
-    snprintf(buf, 32, "[%04u/%02u/%02u %02u:%02u:%02u.%03u] ",
+    snprintf(buf, 32, "[%04u/%02u/%02u %02u:%02u:%02u.%03u]",
         2000 + last_update.year, last_update.month, last_update.day,
         last_update.hour, last_update.minute, last_update.second,
-        last_update.ms);
-    Serial.print(buf);
+        millis() - last_update.now);
+    Serial.println(buf);
 
     for (byte i = 0; i < length; ++i)
     {
