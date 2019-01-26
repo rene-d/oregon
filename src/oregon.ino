@@ -35,11 +35,10 @@ struct datetime
 {
     byte year, month, day;
     byte hour, minute, second;
-
-    unsigned now;
+    unsigned long now;
 };
 
-datetime last_update;
+datetime current_time;
 
 void decode_AEA(const byte *osdata, size_t len);
 void decode_ACC(const byte *osdata, size_t len);
@@ -49,7 +48,9 @@ void setup()
     Serial.begin(115200);
     Serial.println("Setup started");
 
-    memset(&last_update, 0, sizeof(last_update));
+    memset(&current_time, 0, sizeof(current_time));
+    current_time.day = 1;
+    current_time.month = 1;
     pinMode(LED_BUILTIN, OUTPUT);
 
     // Setup received data
@@ -68,39 +69,39 @@ void loop()
     pulse = 0;
     interrupts(); // Enable interrupts
 
-    unsigned now = millis();
-    unsigned o = now - last_update.now;
+    unsigned long now = millis();
+    unsigned long o = now - current_time.now;
     if (o >= 1000)
     {
         digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
 
-        last_update.now = now;
+        current_time.now = now;
 
         while (o > 1000)
         {
             o -= 1000;
 
-            last_update.second++;
-            if (last_update.second >= 60)
+            current_time.second++;
+            if (current_time.second >= 60)
             {
-                last_update.second = 0;
-                last_update.minute++;
-                if (last_update.minute >= 60)
+                current_time.second = 0;
+                current_time.minute++;
+                if (current_time.minute >= 60)
                 {
-                    last_update.minute = 0;
-                    last_update.hour++;
-                    if (last_update.hour >= 24)
+                    current_time.minute = 0;
+                    current_time.hour++;
+                    if (current_time.hour >= 24)
                     {
-                        last_update.hour = 0;
-                        last_update.day++;
-                        if (last_update.day > days_in_month(last_update.month, last_update.year))
+                        current_time.hour = 0;
+                        current_time.day++;
+                        if (current_time.day > days_in_month(current_time.month, current_time.year))
                         {
-                            last_update.day = 1;
-                            last_update.month++;
-                            if (last_update.month > 12)
+                            current_time.day = 1;
+                            current_time.month++;
+                            if (current_time.month > 12)
                             {
-                                last_update.month = 1;
-                                last_update.year++;
+                                current_time.month = 1;
+                                current_time.year++;
                             }
                         }
                     }
@@ -162,10 +163,10 @@ void print_hexa(const byte *data, byte length)
 {
     char buf[32];
 
-    snprintf(buf, 32, "[%04u/%02u/%02u %02u:%02u:%02u.%03u]",
-             2000 + last_update.year, last_update.month, last_update.day,
-             last_update.hour, last_update.minute, last_update.second,
-             millis() - last_update.now);
+    snprintf(buf, 32, "[%04u/%02u/%02u %02u:%02u:%02u.%03lu]",
+             2000 + current_time.year, current_time.month, current_time.day,
+             current_time.hour, current_time.minute, current_time.second,
+             millis() - current_time.now);
     Serial.println(buf);
 
     for (byte i = 0; i < length; ++i)
@@ -247,13 +248,13 @@ void decode_AEA(const byte *osdata, size_t len)
 
     if (nibble(osdata, 8) == 6)
     {
-        last_update.now = millis();
-        last_update.year = year;
-        last_update.month = month;
-        last_update.day = day;
-        last_update.hour = hour;
-        last_update.minute = minute;
-        last_update.second = second;
+        current_time.now = millis();
+        current_time.year = year;
+        current_time.month = month;
+        current_time.day = day;
+        current_time.hour = hour;
+        current_time.minute = minute;
+        current_time.second = second;
     }
 
     Serial.print(" id: ");
