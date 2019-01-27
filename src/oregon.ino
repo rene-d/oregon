@@ -1,30 +1,5 @@
-/**
- *******************************
- *
- * Version 1.0 - Hubert Mickael <mickael@winlux.fr> (https://github.com/Mickaelh51)
- *  - Clean ino code
- *  - Add MY_DEBUG mode in library
- * Version 0.2 (Beta 2) - Hubert Mickael <mickael@winlux.fr> (https://github.com/Mickaelh51)
- *  - Auto detect Oregon 433Mhz
- *  - Add battery level
- *  - etc ...
- * Version 0.1 (Beta 1) - Hubert Mickael <mickael@winlux.fr> (https://github.com/Mickaelh51)
- *
- *******************************
- * DESCRIPTION
- * This sketch provides an example how to implement a humidity/temperature from Oregon sensor.
- * - Oregon sensor's battery level
- * - Oregon sensor's id
- * - Oregon sensor's type
- * - Oregon sensor's channel
- * - Oregon sensor's temperature
- * - Oregon sensor's humidity
- *
- * Arduino UNO <-- (PIN 2) --> 433Mhz receiver <=============> Oregon sensors
- */
-
-// Enable debug prints
-#define MY_DEBUG
+// oregon.ino
+// rene-d 01/2019
 
 #include <Oregon.h>
 
@@ -152,7 +127,7 @@ int days_in_month(byte month, byte year)
     static byte days[] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     if (month == 2)
     {
-        // we will never reach 2100™
+        // we will never reach 2100
         if (year % 4 == 0)
             return 29;
     }
@@ -237,6 +212,8 @@ byte nibble(const byte *osdata, int n)
 
 void decode_AEA(const byte *osdata, size_t len)
 {
+    //bool ok = checksum(osdata, 1, 11, osdata[11]);
+
     int channel = (osdata[2] >> 4);
 
     int year = (osdata[9] >> 4) + 10 * (osdata[10] & 0xf);
@@ -271,7 +248,7 @@ void decode_ACC(const byte *osdata, size_t len)
 {
     int temp, hum;
 
-    //bool ok = checksum(osdata, 1, 8, osdata[8]); // checksum = all nibbles 0-15 results is nibbles 16.17
+    //bool ok = checksum(osdata, 1, 8, osdata[8]);
 
     int channel = (osdata[2] >> 4);
 

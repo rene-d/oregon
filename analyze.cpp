@@ -1,14 +1,13 @@
 // analyze.cpp
-
-// Oregon Scientific remote sensor
-// RTGR328N
+// rene-d 01/2019
 
 #include <iostream>
 
 using namespace std;
-typedef unsigned char byte;
 
 //#define ARDUINO
+
+typedef unsigned char byte;
 
 enum
 {
@@ -185,7 +184,8 @@ byte nibble(const byte *osdata, byte n)
 // message AEA or AEC
 void decode_AEA(const byte *osdata, size_t len)
 {
-    if (len < 12) return;
+    if (len < 12)
+        return;
 
     byte crc = osdata[11];
     bool ok = checksum(osdata, 1, 11, crc);
@@ -257,7 +257,8 @@ void decode_AEA(const byte *osdata, size_t len)
 //
 void decode_ACC(const byte *osdata, size_t len)
 {
-    if (len < 9) return;
+    if (len < 9)
+        return;
 
     uint8_t crc = osdata[8];
     bool ok = checksum(osdata, 1, 8, crc); // checksum = all nibbles 0-15 results is nibbles 16.17
@@ -327,10 +328,17 @@ void oregon(const char *data)
 
     size_t len = fromhex(osdata, data);
     uint16_t id = ((osdata[0] & 0xf) << 8) + osdata[1];
+    uint16_t id4 = (osdata[0] << 8) + osdata[1];
 
-    if (id == 0xACC || id == 0xA2D)
+    if (id == 0xACC)
     {
         printf("\nmessage: %03X   len=%zu\ndata: ", id, len);
+        prt(osdata, len);
+        decode_ACC(osdata, len);
+    }
+    else if (id4 == 0x1A2D)
+    {
+        printf("\nmessage: %04X   len=%zu\ndata: ", id4, len);
         prt(osdata, len);
         decode_ACC(osdata, len);
     }
@@ -340,11 +348,16 @@ void oregon(const char *data)
         prt(osdata, len);
         decode_AEA(osdata, len);
     }
+    else
+    {
+        printf("\nmessage: %04X   len=%zu UNKNOWN\ndata: ", id4, len);
+        prt(osdata, len);
+    }
 }
 
 int main()
 {
-    FILE *f = fopen("dump.txt", "r"); // popen("grep -E '^[0-9A-F]{5,}' dump.txt", "r");
+    FILE *f = fopen("dump.txt", "r");
     char buf[128];
     while (fgets(buf, 128, f))
     {
@@ -365,5 +378,5 @@ int main()
             oregon(buf);
         }
     }
-    fclose(f); // pclose(f);
+    fclose(f);
 }
