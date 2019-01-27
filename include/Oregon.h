@@ -244,71 +244,10 @@ void ext_int_1(void)
     last += pulse;
 }
 
-float temperature(const byte *data)
-{
-    int sign = (data[6] & 0x8) ? -1 : 1;
-    float temp = ((data[5] & 0xF0) >> 4) * 10 + (data[5] & 0xF) + (float)(((data[4] & 0xF0) >> 4) / 10.0);
-    float result = sign * temp;
-#ifdef MY_DEBUG
-    Serial.println("Oregon temperature: " + String(result));
-#endif
-    return sign * temp;
-}
-
-byte humidity(const byte *data)
-{
-    byte humidity = (data[7] & 0xF) * 10 + ((data[6] & 0xF0) >> 4);
-#ifdef MY_DEBUG
-    Serial.println("Oregon humidity: " + String(humidity));
-#endif
-    return (humidity);
-}
-
-// 10 => battery lovel is LOW
-// 90 => battery level is HIGH
-byte battery(const byte *data)
-{
-    const char *BatteryLevel = (data[4] & 0x4) ? "LOW" : "HIGH";
-#ifdef MY_DEBUG
-    Serial.println("Oregon battery level: " + String(BatteryLevel));
-#endif
-    return data[4] & 0x4 ? 0 : 1;
-}
-
-// Find id from Oregon Sensors
-byte id(const byte *data)
-{
-#ifdef MY_DEBUG
-    Serial.print("Oregon ID: " + String(data[3]) + " Hexadecimal: ");
-    Serial.println(data[3], HEX);
-#endif
-    return (data[3]);
-}
-
-// Find Channel from Oregon Sensors
-byte channel(const byte *data)
-{
-    byte channel = data[2] >> 4;
-#ifdef MY_DEBUG
-    Serial.println("Oregon channel: " + String(channel));
-#endif
-    return channel;
-}
-
 // Decode data once
 const byte *DataToDecoder(DecodeOOK &decoder, byte &length)
 {
     const byte *data = decoder.getData(length);
-
-#ifdef MY_DEBUG
-    //Serial.println("Brute Hexadecimal data from sensor: ");
-    // for (byte i = 0; i < pos; ++i)
-    // {
-    //     Serial.print(data[i] >> 4, HEX);
-    //     Serial.print(data[i] & 0x0F, HEX);
-    // }
-    // Serial.println();
-#endif
 
     decoder.resetDecoder();
     return data;
