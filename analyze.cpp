@@ -50,8 +50,8 @@ void print_hexa(const byte *b, size_t l)
     for (size_t i = 0; i < l; ++i)
     {
         Serial.print(" ");
-        Serial.print(b[i] >> 4, HEX);
         Serial.print(b[i] & 0xf, HEX);
+        Serial.print(b[i] >> 4, HEX);
     }
     Serial.println();
 }
@@ -61,7 +61,10 @@ void oregon(const byte *osdata, size_t len)
     if (len < 2)
         return;
 
-    uint16_t id = (osdata[0] << 8) + osdata[1];
+    uint16_t id = (((uint16_t)nibble(osdata, 1)) << 12) +
+                  (((uint16_t)nibble(osdata, 2)) << 8) +
+                  (((uint16_t)nibble(osdata, 3)) << 4) +
+                  nibble(osdata, 4);
 
     Serial.println();
     Serial.print("message: ");
@@ -71,17 +74,17 @@ void oregon(const byte *osdata, size_t len)
 
     print_hexa(osdata, len);
 
-    if ((id & 0x0fff) == 0xACC)
+    if ((id & 0x0fff) == 0xCC3)
     {
-        decode_ACC(osdata, len);
+        decode_temp_hygro(osdata, len);
     }
-    else if (id == 0x1A2D)
+    else if (id == 0x1D20)
     {
-        decode_ACC(osdata, len);
+        decode_temp_hygro(osdata, len);
     }
-    else if ((id & 0x0fff) == 0xAEA || (id & 0x0fff) == 0xAEC)
+    else if (id == 0x8AE3 || id == 0x8CE3)
     {
-        decode_AEA(osdata, len);
+        decode_date_time(osdata, len);
     }
     else
     {

@@ -1,7 +1,5 @@
 // decode.h
 //
-#ifndef decode_h
-#define decode_h
 
 // internal clock, set from OS sensor
 struct
@@ -23,7 +21,7 @@ bool checksum(const byte *osdata, byte type, byte count, byte check)
             calc += (osdata[i] & 0xF0) >> 4;
             calc += (osdata[i] & 0xF);
         }
-        calc = calc - 10;
+        calc = calc - 10;       // probably the first nibble A
     }
     else if (type == 2) // type 2, add all nibbles up to count, add the 13th nibble, deduct 10
     {
@@ -33,7 +31,7 @@ bool checksum(const byte *osdata, byte type, byte count, byte check)
             calc += (osdata[i] & 0xF);
         }
         calc += (osdata[6] & 0xF);
-        calc = calc - 10;
+        calc = calc - 10;       // probably the first nibble A
     }
     else if (type == 3) // type 3, add all nibbles up to count, subtract 10 only use the low 4 bits for the compare
     {
@@ -42,7 +40,7 @@ bool checksum(const byte *osdata, byte type, byte count, byte check)
             calc += (osdata[i] & 0xF0) >> 4;
             calc += (osdata[i] & 0xF);
         }
-        calc = calc - 10;
+        calc = calc - 10;       // probably the first nibble A
         calc = (calc & 0x0f);
     }
     else if (type == 4)
@@ -52,7 +50,7 @@ bool checksum(const byte *osdata, byte type, byte count, byte check)
             calc += (osdata[i] & 0xF0) >> 4;
             calc += (osdata[i] & 0xF);
         }
-        calc = calc - 10;
+        calc = calc - 10;       // probably the first nibble A
     }
     return (check == calc);
 }
@@ -69,8 +67,8 @@ byte nibble(const byte *osdata, byte n)
     }
 }
 
-// message AEA or AEC
-void decode_AEA(const byte *osdata, size_t len)
+// message xAEA or xAEC
+void decode_date_time(const byte *osdata, size_t len)
 {
     if (len < 12)
         return;
@@ -78,8 +76,8 @@ void decode_AEA(const byte *osdata, size_t len)
     byte crc = osdata[11];
     bool ok = checksum(osdata, 1, 11, crc);
 
-    uint8_t channel = (osdata[2] >> 4);
-    uint16_t rolling_code = osdata[3];
+    byte channel = (osdata[2] >> 4);
+    byte rolling_code = osdata[3];
 
     int year = (osdata[9] >> 4) + 10 * (osdata[10] & 0xf);
     int month = (osdata[8] >> 4);
@@ -94,9 +92,9 @@ void decode_AEA(const byte *osdata, size_t len)
     if (!ok)
         Serial.println(" bad crc");
 
-    if (ok && nibble(osdata, 8) == 6)
+    if (ok && (nibble(osdata, 8) & 2) != 0)
     {
-        // update our internal clock
+        // update the sensor clock
         sensor_clock.now = millis();
         sensor_clock.year = year;
         sensor_clock.month = month;
@@ -112,27 +110,27 @@ void decode_AEA(const byte *osdata, size_t len)
     Serial.println(channel);
 
     char buf[100];
-    snprintf(buf, sizeof(buf), " date: %02d/%02d/20%02d", day, month, year);
+    snprintf(buf, sizeof(buf), " date: 20%02d/%02d/%02d", year, day, month);
     Serial.println(buf);
     snprintf(buf, sizeof(buf), " time: %02d:%02d:%02d", hour, minute, second);
     Serial.println(buf);
 #else
     char buf[80];
-    snprintf(buf, sizeof(buf), "channel=%d crc=%02X %s id=%02X date=%02d/%02d/20%02d %02d:%02d:%02d",
+    snprintf(buf, sizeof(buf), "channel=%d crc=%02X %s id=%d date=20%02d/%02d/%02d %02d:%02d:%02d",
              channel, crc, ok ? "OK" : "KO", rolling_code,
-             day, month, year, hour, minute, second);
+             year, day, month, hour, minute, second);
     Serial.println(buf);
 
     static const char *label[] = {
-        "id_msg",         // 0    b0
-        "?",              // 1    b0
+        "alwaysA",        // 0    b0    A=1010 - no part of the message
+        "id_msg",         // 1    b0
         "id_msg",         // 2    b1
         "id_msg",         // 3    b1
-        "?",              // 4    b2
+        "id_msg",         // 4    b2
         "channel",        // 5    b2
         "rolling code",   // 6    b3
         "rolling code",   // 7    b3
-        "?",              // 8    b4        0,4,8: date invalide, 6: date valide
+        "?",              // 8    b4    0,4,8: date is invalid, 2 or 6: date is valid
         "second (units)", // 9    b4
         "second (tens)",  // 10   b5
         "minute (unit)",  // 11   b5
@@ -158,17 +156,19 @@ void decode_AEA(const byte *osdata, size_t len)
 #endif
 }
 
-//
-void decode_ACC(const byte *osdata, size_t len)
+
+// message _ACC or 1A2D
+// possible values are: {9..D}ACC
+void decode_temp_hygro(const byte *osdata, size_t len)
 {
     if (len < 9)
         return;
 
-    uint8_t crc = osdata[8];
+    byte crc = osdata[8];
     bool ok = checksum(osdata, 1, 8, crc); // checksum = all nibbles 0-15 results is nibbles 16.17
 
-    uint8_t channel = (osdata[2] >> 4);
-    uint16_t rolling_code = osdata[3];
+    byte channel = (osdata[2] >> 4);
+    byte rolling_code = osdata[3];
 
     int temp = ((osdata[5] >> 4) * 100) + ((osdata[5] & 0x0F) * 10) + ((osdata[4] >> 4));
     if (osdata[6] & 0x08)
@@ -193,7 +193,7 @@ void decode_ACC(const byte *osdata, size_t len)
 
     Serial.print(" bat: ");
     Serial.print(bat);
-    if (bat >= 4)
+    if ((bat & 4) != 0)
     {
         Serial.println(" low");
     }
@@ -203,21 +203,21 @@ void decode_ACC(const byte *osdata, size_t len)
     }
 #else
     char buf[80];
-    snprintf(buf, sizeof(buf), "channel=%d crc=%02X %s id=%02X temp=%.1lf°C hum=%d%% bat=%d",
+    snprintf(buf, sizeof(buf), "channel=%d crc=%02X %s id=%d temp=%.1lf°C hum=%d%% bat=%d %d",
              channel, crc, ok ? "OK" : "KO", rolling_code,
-             temp / 10., hum, bat);
+             temp / 10., hum, bat, nibble(osdata,15));
     Serial.println(buf);
 
     static const char *label[] = {
-        "id_msg",               // 0    b0 lsb
-        "?",                    // 1    b0 msb
+        "alwaysA",              // 0    b0 lsb  always A=1010
+        "id_msg",               // 1    b0 msb  seems to vary
         "id_msg",               // 2    b1 lsb
         "id_msg",               // 3    b1 msb
-        "?",                    // 4    b2 lsb
+        "id_msg",               // 4    b2 lsb
         "channel",              // 5    b2 msb
         "rolling code",         // 6    b3 lsb
         "rolling code",         // 7    b3 msb
-        "battery",              // 8    b4 lsb
+        "battery",              // 8    b4 lsb  bit 3=1 => low?
         "temperature (tenths)", // 9    b4 msb
         "temperature (units)",  // 10   b5 lsb
         "temperature (tens)",   // 11   b5 msb
@@ -236,5 +236,3 @@ void decode_ACC(const byte *osdata, size_t len)
     }
 #endif
 }
-
-#endif

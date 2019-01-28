@@ -7,8 +7,6 @@
 // Define pin where is 433Mhz receiver (here, pin 2)
 #define MHZ_RECEIVER_PIN 2
 
-
-
 void setup()
 {
     Serial.begin(115200);
@@ -35,6 +33,59 @@ void loop()
     pulse = 0;
     interrupts(); // Enable interrupts
 
+    if (p != 0)
+    {
+        if (orscV2.nextPulse(p))
+        {
+            Serial.println();
+
+            // Decode Hex Data once
+            byte length;
+            const byte *osdata = DataToDecoder(orscV2, length);
+
+            print_hexa(osdata, length);
+
+            uint16_t msg_id = ((osdata[0] & 0xf) << 8) + osdata[1];
+
+            if (msg_id == 0xACC || msg_id == 0xA2D)
+                decode_temp_hygro(osdata, length);
+            else if (msg_id == 0xAEA || msg_id == 0xAEC)
+                decode_date_time(osdata, length);
+        }
+    }
+
+    update_clock();
+
+    if (Serial.available() > 0)
+    {
+        // read the incoming byte:
+        byte incomingByte = Serial.read();
+
+        // say what you got:
+        //Serial.print("I received: ");
+        //Serial.println(incomingByte, DEC);
+
+        if (incomingByte == 't')
+        {
+            print_hexa(&incomingByte, 0);
+        }
+    }
+}
+
+int days_in_month(byte month, byte year)
+{
+    static byte days[] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    if (month == 2)
+    {
+        // we will never reach 2100
+        if (year % 4 == 0)
+            return 29;
+    }
+    return days[month];
+}
+
+void update_clock()
+{
     unsigned long now = millis();
     unsigned long o = now - sensor_clock.now;
     if (o >= 1000)
@@ -75,55 +126,8 @@ void loop()
             }
         }
     }
-
-    if (Serial.available() > 0)
-    {
-        // read the incoming byte:
-        byte incomingByte = Serial.read();
-
-        // say what you got:
-        //Serial.print("I received: ");
-        //Serial.println(incomingByte, DEC);
-
-        if (incomingByte == 't')
-        {
-            print_hexa(&incomingByte, 0);
-        }
-    }
-
-    if (p != 0)
-    {
-        if (orscV2.nextPulse(p))
-        {
-            Serial.println();
-
-            // Decode Hex Data once
-            byte length;
-            const byte *osdata = DataToDecoder(orscV2, length);
-
-            print_hexa(osdata, length);
-
-            uint16_t msg_id = ((osdata[0] & 0xf) << 8) + osdata[1];
-
-            if (msg_id == 0xACC || msg_id == 0xA2D)
-                decode_ACC(osdata, length);
-            else if (msg_id == 0xAEA || msg_id == 0xAEC)
-                decode_AEA(osdata, length);
-        }
-    }
 }
 
-int days_in_month(byte month, byte year)
-{
-    static byte days[] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-    if (month == 2)
-    {
-        // we will never reach 2100
-        if (year % 4 == 0)
-            return 29;
-    }
-    return days[month];
-}
 
 void print_hexa(const byte *data, byte length)
 {
