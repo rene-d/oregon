@@ -56,6 +56,7 @@ void print_hexa(const byte *b, size_t l)
     Serial.println();
 }
 
+
 void oregon(const byte *osdata, size_t len)
 {
     if (len < 2)
@@ -72,13 +73,7 @@ void oregon(const byte *osdata, size_t len)
     Serial.print(" len=");
     Serial.println(len);
 
-    print_hexa(osdata, len);
-
-    if ((id & 0x0fff) == 0xCC3)
-    {
-        decode_temp_hygro(osdata, len);
-    }
-    else if (id == 0x1D20)
+    if ((id & 0x0fff) == 0xCC3 || id == 0x1D20)
     {
         decode_temp_hygro(osdata, len);
     }
@@ -88,6 +83,7 @@ void oregon(const byte *osdata, size_t len)
     }
     else
     {
+        print_nibbles(osdata, len, "1412");
         Serial.println("UNKNOWN");
     }
 }
@@ -96,6 +92,8 @@ void dump(const char *filename)
 {
     FILE *f;
     char buf[128];
+    byte osdata[128];
+    size_t len;
 
     if (strcmp(filename, "-") == 0)
     {
@@ -111,6 +109,30 @@ void dump(const char *filename)
     while (fgets(buf, 128, f))
     {
         char *c;
+
+        // decode message in nibble order
+        if (*buf == '!')
+        {
+            len = 1;
+            osdata[0] = 0xA;
+
+            for (c = buf; *c; ++c)
+            {
+                byte b = fromhex(*c);
+                if (b != 0xFF)
+                {
+                    if (len & 1)
+                        osdata[len / 2] |= b << 4;
+                    else
+                        osdata[len / 2] = b;
+                    ++len;
+                }
+            }
+            len /= 2;
+            oregon(osdata, len);
+            continue;
+        }
+
         for (c = buf; *c; ++c)
         {
             if (*c == '\r' || *c == '\n')
@@ -125,8 +147,7 @@ void dump(const char *filename)
         {
             *c = 0;
 
-            byte osdata[128];
-            size_t len = fromhex(osdata, sizeof(osdata), buf);
+            len = fromhex(osdata, sizeof(osdata), buf);
 
             oregon(osdata, len);
         }

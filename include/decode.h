@@ -67,6 +67,40 @@ byte nibble(const byte *osdata, byte n)
     }
 }
 
+
+void print_nibbles(const byte *osdata, size_t len, const char *def)
+{
+    static const char digits[] = "0123456789ABCDEF";
+    char hexa[128];
+    size_t i = 0;
+    size_t j = 0;
+    size_t k = 0;
+    char c = def[0];
+    if (c)
+        c -= '0';
+
+    while (i < len * 2 && j < sizeof(hexa) - 3)
+    {
+        hexa[j++] = digits[nibble(osdata, i++)];
+        if (c > 0)
+        {
+            c--;
+            if (c == 0)
+            {
+                hexa[j++] = ' ';
+                c = def[++k];
+                if (c)
+                    c -= '0';
+            }
+        }
+    }
+    hexa[j] = 0;
+
+    Serial.print("data: ");
+    Serial.println(hexa);
+}
+
+
 // message xAEA or xAEC
 void decode_date_time(const byte *osdata, size_t len)
 {
@@ -110,15 +144,17 @@ void decode_date_time(const byte *osdata, size_t len)
     Serial.println(channel);
 
     char buf[100];
-    snprintf(buf, sizeof(buf), " date: 20%02d/%02d/%02d", year, day, month);
+    snprintf(buf, sizeof(buf), " date: 20%02d/%02d/%02d", year, month, day);
     Serial.println(buf);
     snprintf(buf, sizeof(buf), " time: %02d:%02d:%02d", hour, minute, second);
     Serial.println(buf);
 #else
+    print_nibbles(osdata, len, "14121222211212");
+
     char buf[80];
     snprintf(buf, sizeof(buf), "channel=%d crc=%02X %s id=%d date=20%02d/%02d/%02d %02d:%02d:%02d",
              channel, crc, ok ? "OK" : "KO", rolling_code,
-             year, day, month, hour, minute, second);
+             year, month, day, hour, minute, second);
     Serial.println(buf);
 
     static const char *label[] = {
@@ -202,6 +238,7 @@ void decode_temp_hygro(const byte *osdata, size_t len)
         Serial.println(" ok");
     }
 #else
+    print_nibbles(osdata, len, "141214212");
     char buf[80];
     snprintf(buf, sizeof(buf), "channel=%d crc=%02X %s id=%d temp=%.1lf°C hum=%d%% bat=%d %d",
              channel, crc, ok ? "OK" : "KO", rolling_code,
