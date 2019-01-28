@@ -21,7 +21,7 @@ bool checksum(const byte *osdata, byte type, byte count, byte check)
             calc += (osdata[i] & 0xF0) >> 4;
             calc += (osdata[i] & 0xF);
         }
-        calc = calc - 10;       // probably the first nibble A
+        calc = calc - 10; // probably the first nibble A
     }
     else if (type == 2) // type 2, add all nibbles up to count, add the 13th nibble, deduct 10
     {
@@ -31,7 +31,7 @@ bool checksum(const byte *osdata, byte type, byte count, byte check)
             calc += (osdata[i] & 0xF);
         }
         calc += (osdata[6] & 0xF);
-        calc = calc - 10;       // probably the first nibble A
+        calc = calc - 10; // probably the first nibble A
     }
     else if (type == 3) // type 3, add all nibbles up to count, subtract 10 only use the low 4 bits for the compare
     {
@@ -40,7 +40,7 @@ bool checksum(const byte *osdata, byte type, byte count, byte check)
             calc += (osdata[i] & 0xF0) >> 4;
             calc += (osdata[i] & 0xF);
         }
-        calc = calc - 10;       // probably the first nibble A
+        calc = calc - 10; // probably the first nibble A
         calc = (calc & 0x0f);
     }
     else if (type == 4)
@@ -50,7 +50,7 @@ bool checksum(const byte *osdata, byte type, byte count, byte check)
             calc += (osdata[i] & 0xF0) >> 4;
             calc += (osdata[i] & 0xF);
         }
-        calc = calc - 10;       // probably the first nibble A
+        calc = calc - 10; // probably the first nibble A
     }
     return (check == calc);
 }
@@ -66,7 +66,6 @@ byte nibble(const byte *osdata, byte n)
         return osdata[n / 2] & 0xf;
     }
 }
-
 
 void print_nibbles(const byte *osdata, size_t len, const char *def)
 {
@@ -99,7 +98,6 @@ void print_nibbles(const byte *osdata, size_t len, const char *def)
     Serial.print("data: ");
     Serial.println(hexa);
 }
-
 
 // message xAEA or xAEC
 void decode_date_time(const byte *osdata, size_t len)
@@ -192,7 +190,6 @@ void decode_date_time(const byte *osdata, size_t len)
 #endif
 }
 
-
 // message _ACC or 1A2D
 // possible values are: {9..D}ACC
 void decode_temp_hygro(const byte *osdata, size_t len)
@@ -242,7 +239,7 @@ void decode_temp_hygro(const byte *osdata, size_t len)
     char buf[80];
     snprintf(buf, sizeof(buf), "channel=%d crc=%02X %s id=%d temp=%.1lf°C hum=%d%% bat=%d %d",
              channel, crc, ok ? "OK" : "KO", rolling_code,
-             temp / 10., hum, bat, nibble(osdata,15));
+             temp / 10., hum, bat, nibble(osdata, 15));
     Serial.println(buf);
 
     static const char *label[] = {
