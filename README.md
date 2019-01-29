@@ -1,6 +1,6 @@
 # Oregon Scientific sensor logger
 
-An Arduino sketch to gather temperature and humidy from old Oregon Scientific sensor.
+An Arduino sketch to gather temperature and humidy from an old Oregon Scientific sensor.
 
 These sensors use the [Manchester code](https://en.wikipedia.org/wiki/Manchester_code) to transmit data to weather stations. This code was and still is widely used.
 
@@ -16,14 +16,57 @@ These sensors use the [Manchester code](https://en.wikipedia.org/wiki/Manchester
 ## Sensors and messages
 
  * Oregon RTGR328N
-    - `9CC3` : Outside Temp-Hygro (known as `0xACC` in RFLink plugins)
-    - `8AE3` or `8CE3` : Date & Time  (`0xAEC` or `0xAEA`)
+    - `3CCx` (with _x_=_9_,_A_,_B_,_C_,_D_) : Outside Temp-Hygro (known as `0xACC` in RFLink plugins).
+    - `3EA8` or `3EC8` : Date & Time (`0xAEC` or `0xAEA`)
  * Oregon THGR228N or equivalent
-    - `1D20` : Outside Temp-Hygro  (`0x1A2D`)
+    - `02D1` : Outside Temp-Hygro  (`0x1A2D`)
 
-See [decode.h](include/decode.h) for details.
+See [decode.h](include/decode.h) or below for details.
 
-I guess that some authors haven't noticed that the first nibble `A` is not part of the message, or just ignore this fact for convenience.
+I guess that some authors haven't noticed that the first nibble `A` is not a part of the message, or just ignore this fact for convenience.
+
+Nota: In lack of official documentation or clear and verified sources, I cannot know how Oregon Scientific sensors and stations really identify messages: 2 nibbles (`0` and `2`) or 4 nibbles, and with which order (`0x12D0` or `0x02D1`) ? That suppositions... I prefer the last one, because BCD numbers are reversed, the checksum is. So the ID should be too.
+
+### Message with temperature and humidity
+
+Bytes received: `DA CC 43 D9 16 08 80 83 64 A0`
+Nibbles (half-byte) in received order (LSB first, then MSB): `A DCC3 4 9D 6 1800 83 8 46 0A`
+Decoded: `channel=4 temp=8.1°C hum=38% bat=low`
+
+Nibble | Value
+------ | -----
+   0   | always 0xA (1010 in binary), kind of sync or preamble
+  4-1  | message ID
+   5   | channel
+  7-6  | rolling code : a code to identify the sensor, change after many resets
+   8   | battery state, bit 3 seems to indicate a low level battery
+  12-9 | temperature in BCD, value in Celsius degrees
+ 14-13 | percent of humidity
+   15  | unknown
+ 17-16 | checksum (nibbles 1 to 15)
+ 19-18 | unknown trailing, not always present
+
+### Message with date time
+
+Bytes received: `8AEC43D97644318212917177CA`
+Nibbles: `A 8CE3 4 9D 6 74 41 32 82 1 1 91 7 77 AC`
+Decoded: `2019/01/28 23:14:47`
+
+Nibble | Value
+------ | -----
+   0   | always 0xA (1010 in binary), kind of sync or preamble
+  4-1  | message ID
+   5   | channel
+  7-6  | rolling code : a code to identify the sensor, change after many resets
+   8   | probably sync state, bit 1 (value 2) indicates a valid date
+  14-9 | HH:MM:SS in BCD
+ 16-15 | day (1-31)
+   17  | month (1-12)
+   18  | day of week (0=sunday)
+ 20-10 | year
+   21  | unknown
+ 23-22 | checksum (nibbles 1 to 21)
+ 25-24 | unknown trailing, not always present
 
 ## Wiring
 

@@ -45,12 +45,16 @@ void loop()
 
             print_hexa(osdata, length);
 
+            oregon_decode(osdata, length);
+            /*
+
             uint16_t msg_id = ((osdata[0] & 0xf) << 8) + osdata[1];
 
             if (msg_id == 0xACC || msg_id == 0xA2D)
                 decode_temp_hygro(osdata, length);
             else if (msg_id == 0xAEA || msg_id == 0xAEC)
                 decode_date_time(osdata, length);
+                */
         }
     }
 

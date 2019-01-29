@@ -57,37 +57,6 @@ void print_hexa(const byte *b, size_t l)
 }
 
 
-void oregon(const byte *osdata, size_t len)
-{
-    if (len < 2)
-        return;
-
-    uint16_t id = (((uint16_t)nibble(osdata, 1)) << 12) +
-                  (((uint16_t)nibble(osdata, 2)) << 8) +
-                  (((uint16_t)nibble(osdata, 3)) << 4) +
-                  nibble(osdata, 4);
-
-    Serial.println();
-    Serial.print("message: ");
-    Serial.print(id, HEX);
-    Serial.print(" len=");
-    Serial.println(len);
-
-    if ((id & 0x0fff) == 0xCC3 || id == 0x1D20)
-    {
-        decode_temp_hygro(osdata, len);
-    }
-    else if (id == 0x8AE3 || id == 0x8CE3)
-    {
-        decode_date_time(osdata, len);
-    }
-    else
-    {
-        print_nibbles(osdata, len, "1412");
-        Serial.println("UNKNOWN");
-    }
-}
-
 void dump(const char *filename)
 {
     FILE *f;
@@ -129,7 +98,7 @@ void dump(const char *filename)
                 }
             }
             len /= 2;
-            oregon(osdata, len);
+            oregon_decode(osdata, len);
             continue;
         }
 
@@ -149,7 +118,7 @@ void dump(const char *filename)
 
             len = fromhex(osdata, sizeof(osdata), buf);
 
-            oregon(osdata, len);
+            oregon_decode(osdata, len);
         }
     }
     if (f != stdin)

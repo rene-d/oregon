@@ -74,9 +74,12 @@ void print_nibbles(const byte *osdata, size_t len, const char *def)
     size_t i = 0;
     size_t j = 0;
     size_t k = 0;
-    char c = def[0];
-    if (c)
-        c -= '0';
+    char c, n;
+
+    n = def[0];
+    if (n)
+        n -= '0';
+    c = n;
 
     while (i < len * 2 && j < sizeof(hexa) - 3)
     {
@@ -86,10 +89,21 @@ void print_nibbles(const byte *osdata, size_t len, const char *def)
             c--;
             if (c == 0)
             {
+                // reverse last def[k] chars
+                if (n > 1)
+                {
+                    for (char z = 0; z < n / 2; ++z)
+                    {
+                        c = hexa[j - 1 - z];
+                        hexa[j - 1 - z] = hexa[j - n + z];
+                        hexa[j - n + z] = c;
+                    }
+                }
                 hexa[j++] = ' ';
-                c = def[++k];
-                if (c)
-                    c -= '0';
+                n = def[++k];
+                if (n)
+                    n -= '0';
+                c = n;
             }
         }
     }
@@ -99,7 +113,7 @@ void print_nibbles(const byte *osdata, size_t len, const char *def)
     Serial.println(hexa);
 }
 
-// message xAEA or xAEC
+// message 3EA8 or 3EC8
 void decode_date_time(const byte *osdata, size_t len)
 {
     if (len < 12)
@@ -150,7 +164,7 @@ void decode_date_time(const byte *osdata, size_t len)
     print_nibbles(osdata, len, "14121222211212");
 
     char buf[80];
-    snprintf(buf, sizeof(buf), "channel=%d crc=%02X %s id=%d date=20%02d/%02d/%02d %02d:%02d:%02d",
+    snprintf(buf, sizeof(buf), "channel=%d crc=$%02X %s id=%d date=20%02d/%02d/%02d %02d:%02d:%02d",
              channel, crc, ok ? "OK" : "KO", rolling_code,
              year, month, day, hour, minute, second);
     Serial.println(buf);
@@ -164,7 +178,7 @@ void decode_date_time(const byte *osdata, size_t len)
         "channel",        // 5    b2
         "rolling code",   // 6    b3
         "rolling code",   // 7    b3
-        "?",              // 8    b4    0,4,8: date is invalid, 2 or 6: date is valid
+        "clock state",    // 8    b4    0,4,8: date is invalid, 2 or 6: date is valid
         "second (units)", // 9    b4
         "second (tens)",  // 10   b5
         "minute (unit)",  // 11   b5
@@ -190,8 +204,7 @@ void decode_date_time(const byte *osdata, size_t len)
 #endif
 }
 
-// message _ACC or 1A2D
-// possible values are: {9..D}ACC
+// message 3CCx or 02D1
 void decode_temp_hygro(const byte *osdata, size_t len)
 {
     if (len < 9)
@@ -237,7 +250,7 @@ void decode_temp_hygro(const byte *osdata, size_t len)
 #else
     print_nibbles(osdata, len, "141214212");
     char buf[80];
-    snprintf(buf, sizeof(buf), "channel=%d crc=%02X %s id=%d temp=%.1lf°C hum=%d%% bat=%d %d",
+    snprintf(buf, sizeof(buf), "channel=%d crc=$%02X %s id=%d temp=%.1lf°C hum=%d%% bat=%d %d",
              channel, crc, ok ? "OK" : "KO", rolling_code,
              temp / 10., hum, bat, nibble(osdata, 15));
     Serial.println(buf);
@@ -269,4 +282,39 @@ void decode_temp_hygro(const byte *osdata, size_t len)
         Serial.println(buf);
     }
 #endif
+}
+
+void oregon_decode(const byte *osdata, size_t len)
+{
+    if (len < 5)
+        return;
+
+    uint16_t id = (((uint16_t)nibble(osdata, 4)) << 12) +
+                  (((uint16_t)nibble(osdata, 3)) << 8) +
+                  (((uint16_t)nibble(osdata, 2)) << 4) +
+                  (((uint16_t)nibble(osdata, 1)));
+
+#ifndef ARDUINO
+    Serial.println();
+    Serial.print("message: ");
+    Serial.print(id, HEX);
+    Serial.print(" len=");
+    Serial.println(len);
+#endif
+
+    if ((id & 0xFFF0) == 0x3CC0 || id == 0x02D1)
+    {
+        decode_temp_hygro(osdata, len);
+    }
+    else if (id == 0x3EA8 || id == 0x3EC8)
+    {
+        decode_date_time(osdata, len);
+    }
+    else
+    {
+#ifndef ARDUINO
+        print_nibbles(osdata, len, "1412");
+        Serial.println("UNKNOWN");
+#endif
+    }
 }
