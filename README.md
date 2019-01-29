@@ -1,8 +1,8 @@
 # Oregon Scientific sensor logger
 
-An Arduino sketch to gather temperature and humidy from an old Oregon Scientific sensor.
+An Arduino sketch to gather temperature and humidy from an old [Oregon Scientific](http://global.oregonscientific.com/) sensor.
 
-These sensors use the [Manchester code](https://en.wikipedia.org/wiki/Manchester_code) to transmit data to weather stations. This code was and still is widely used.
+These sensors use the [Manchester code](https://en.wikipedia.org/wiki/Manchester_code) to transmit data to weather stations. This kind of data encoding was and still is widely used.
 
 ## Parts
 - Arduino [Nano](https://store.arduino.cc/arduino-nano) or [Uno](https://store.arduino.cc/arduino-uno-rev3), or any other cheap clone
@@ -25,13 +25,19 @@ See [decode.h](include/decode.h) or below for details.
 
 I guess that some authors haven't noticed that the first nibble `A` is not a part of the message, or just ignore this fact for convenience.
 
-Nota: In lack of official documentation or clear and verified sources, I cannot know how Oregon Scientific sensors and stations really identify messages: 2 nibbles (`0` and `2`) or 4 nibbles, and with which order (`0x12D0` or `0x02D1`) ? That suppositions... I prefer the last one, because BCD numbers are reversed, the checksum is. So the ID should be too.
+*Nota*
+
+Bytes are received in 2 nibbles, LSB first, then MSB.
+
+In lack of official documentation or clear and verified sources, I cannot know how Oregon Scientific sensors and stations really identify messages: 2 nibbles (`0` and `2`) or 4 nibbles, and with which order (`0x12D0` or `0x02D1`) ? That suppositions... I prefer the last one, because BCD numbers are reversed, the checksum is. So the ID should be too.
 
 ### Message with temperature and humidity
 
-Bytes received: `DA CC 43 D9 16 08 80 83 64 A0`
-Nibbles (half-byte) in received order (LSB first, then MSB): `A DCC3 4 9D 6 1800 83 8 46 0A`
-Decoded: `channel=4 temp=8.1°C hum=38% bat=low`
+Desc | Content
+---- | -------
+Bytes received | `DA CC 43 D9 16 08 80 83 64 A0`
+Nibbles | `A DCC3 4 9D 6 1800 83 8 46 0A`
+Decoded | `channel=4 temp=8.1°C hum=38% bat=low`
 
 Nibble | Value
 ------ | -----
@@ -44,13 +50,16 @@ Nibble | Value
  14-13 | percent of humidity
    15  | unknown
  17-16 | checksum (nibbles 1 to 15)
- 19-18 | unknown trailing, not always present
+ 19-18 | unknown trailing, not always present or misunderstanding of protocol
 
 ### Message with date time
 
-Bytes received: `8AEC43D97644318212917177CA`
-Nibbles: `A 8CE3 4 9D 6 74 41 32 82 1 1 91 7 77 AC`
-Decoded: `2019/01/28 23:14:47`
+
+Desc | Content
+---- | -------
+Bytes received | `8AEC43D97644318212917177CA`
+Nibbles | `A 8CE3 4 9D 6 74 41 32 82 1 1 91 7 77 AC`
+Decoded | `channel=4 clock=2019/01/28 23:14:47`
 
 Nibble | Value
 ------ | -----
@@ -66,7 +75,7 @@ Nibble | Value
  20-10 | year
    21  | unknown
  23-22 | checksum (nibbles 1 to 21)
- 25-24 | unknown trailing, not always present
+ 25-24 | unknown trailing, not always present or misunderstanding of protocol
 
 ## Wiring
 
