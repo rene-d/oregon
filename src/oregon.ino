@@ -37,7 +37,6 @@ void loop()
     {
         if (orscV2.nextPulse(p))
         {
-            Serial.println();
 
             // Decode Hex Data once
             byte length;
@@ -46,15 +45,6 @@ void loop()
             print_hexa(osdata, length);
 
             oregon_decode(osdata, length);
-            /*
-
-            uint16_t msg_id = ((osdata[0] & 0xf) << 8) + osdata[1];
-
-            if (msg_id == 0xACC || msg_id == 0xA2D)
-                decode_temp_hygro(osdata, length);
-            else if (msg_id == 0xAEA || msg_id == 0xAEC)
-                decode_date_time(osdata, length);
-                */
         }
     }
 
@@ -65,12 +55,9 @@ void loop()
         // read the incoming byte:
         byte incomingByte = Serial.read();
 
-        // say what you got:
-        //Serial.print("I received: ");
-        //Serial.println(incomingByte, DEC);
-
         if (incomingByte == 't')
         {
+            // print the current time
             print_hexa(&incomingByte, 0);
         }
     }
@@ -100,8 +87,11 @@ void update_clock()
 
         while (o >= 1000)
         {
+            // advance the clock by one second
+
             o -= 1000;
 
+            // dirty code done dirt cheap...
             sensor_clock.second++;
             if (sensor_clock.second >= 60)
             {
@@ -132,17 +122,19 @@ void update_clock()
     }
 }
 
-
 void print_hexa(const byte *data, byte length)
 {
-    char buf[32];
+    Serial.println();
 
+    // print the sensor/board clock
+    char buf[32];
     snprintf(buf, 32, "[%04u/%02u/%02u %02u:%02u:%02u.%03lu]",
              2000 + sensor_clock.year, sensor_clock.month, sensor_clock.day,
              sensor_clock.hour, sensor_clock.minute, sensor_clock.second,
              millis() - sensor_clock.now);
     Serial.println(buf);
 
+    // print data in byte order, that's NOT the nibble order
     for (byte i = 0; i < length; ++i)
     {
         Serial.print(data[i] >> 4, HEX);

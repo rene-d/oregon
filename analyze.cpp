@@ -56,7 +56,6 @@ void print_hexa(const byte *b, size_t l)
     Serial.println();
 }
 
-
 void dump(const char *filename)
 {
     FILE *f;
