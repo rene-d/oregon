@@ -59,7 +59,7 @@ Desc | Content
 ---- | -------
 Bytes received | `8AEC43D97644318212917177CA`
 Nibbles | `A 8CE3 4 9D 6 74 41 32 82 1 1 91 7 77 AC`
-Decoded | `2019/01/28 23:14:47`
+Decoded | `channel=4 clock=2019/01/28 23:14:47`
 
 Nibble | Value
 ------ | -----
