@@ -271,7 +271,7 @@ void decode_temp_hygro(const byte *osdata, size_t len)
         "temperature (sign)",   // 12   b6 lsb
         "humidity (units)",     // 13   b6 msb
         "humidity (tens)",      // 14   b7 lsb
-        "?",                    // 15   b7 msb
+        "comfort",              // 15   b7 msb  comfort ???   //0: normal, 4: comfortable, 8: dry, C: wet
         "crc",                  // 16   b8 lsb
         "crc",                  // 17   b8 msb
     };
