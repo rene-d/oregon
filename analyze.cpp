@@ -1,6 +1,7 @@
 // analyze.cpp
 // rene-d 01/2019
 
+#include <cstring>
 #include <iostream>
 
 using namespace std;
@@ -44,24 +45,16 @@ size_t fromhex(byte *x, size_t max_len, const char *s)
     return count;
 }
 
-void print_hexa(const byte *b, size_t l)
-{
-    Serial.print("data:");
-    for (size_t i = 0; i < l; ++i)
-    {
-        Serial.print(" ");
-        Serial.print(b[i] & 0xf, HEX);
-        Serial.print(b[i] >> 4, HEX);
-    }
-    Serial.println();
-}
-
+//
+  // dump Oregon Scientific messages from a text file
+//
 void dump(const char *filename)
 {
     FILE *f;
     char buf[128];
     byte osdata[128];
     size_t len;
+    char *c;
 
     if (strcmp(filename, "-") == 0)
     {
@@ -76,11 +69,9 @@ void dump(const char *filename)
 
     while (fgets(buf, 128, f))
     {
-        char *c;
-
-        // decode message in nibble order
         if (*buf == '!')
         {
+            // decode message in nibble order
             len = 1;
             osdata[0] = 0xA;
 
@@ -97,29 +88,37 @@ void dump(const char *filename)
                 }
             }
             len /= 2;
-            oregon_decode(osdata, len);
-            continue;
-        }
 
-        for (c = buf; *c; ++c)
+            printf("\n");
+            oregon_decode(osdata, len);
+        }
+        else
         {
-            if (*c == '\r' || *c == '\n')
+            // look for line with hexadecimal digits only
+            for (c = buf; *c; ++c)
             {
-                *c = 0;
-                break;
+                if (*c == '\r' || *c == '\n') // end of line
+                {
+                    *c = 0;
+                    break;
+                }
+                if (fromhex(*c) == 0xFF) // not a digit
+                    break;
             }
-            if (fromhex(*c) == 0xFF)
-                break;
-        }
-        if (*c == 0 && c > buf + 1)
-        {
-            *c = 0;
 
-            len = fromhex(osdata, sizeof(osdata), buf);
+            if (*c == 0 && c > buf + 1)
+            {
+                // ok, found
+                *c = 0;
 
-            oregon_decode(osdata, len);
+                len = fromhex(osdata, sizeof(osdata), buf);
+
+                printf("\n");
+                oregon_decode(osdata, len);
+            }
         }
     }
+
     if (f != stdin)
         fclose(f);
 }

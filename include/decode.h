@@ -9,52 +9,9 @@ struct
     unsigned long now;
 } sensor_clock;
 
-// calculate a packet checksum by performing a
-bool checksum(const byte *osdata, byte type, byte count, byte check)
-{
-    byte calc = 0;
-
-    if (type == 1) // type 1, add all nibbles, deduct 10
-    {
-        for (byte i = 0; i < count; i++)
-        {
-            calc += (osdata[i] & 0xF0) >> 4;
-            calc += (osdata[i] & 0xF);
-        }
-        calc = calc - 10; // probably the first nibble A
-    }
-    else if (type == 2) // type 2, add all nibbles up to count, add the 13th nibble, deduct 10
-    {
-        for (byte i = 0; i < count; i++)
-        {
-            calc += (osdata[i] & 0xF0) >> 4;
-            calc += (osdata[i] & 0xF);
-        }
-        calc += (osdata[6] & 0xF);
-        calc = calc - 10; // probably the first nibble A
-    }
-    else if (type == 3) // type 3, add all nibbles up to count, subtract 10 only use the low 4 bits for the compare
-    {
-        for (byte i = 0; i < count; i++)
-        {
-            calc += (osdata[i] & 0xF0) >> 4;
-            calc += (osdata[i] & 0xF);
-        }
-        calc = calc - 10; // probably the first nibble A
-        calc = (calc & 0x0f);
-    }
-    else if (type == 4)
-    {
-        for (byte i = 0; i < count; i++)
-        {
-            calc += (osdata[i] & 0xF0) >> 4;
-            calc += (osdata[i] & 0xF);
-        }
-        calc = calc - 10; // probably the first nibble A
-    }
-    return (check == calc);
-}
-
+//
+// get a nibble (a half byte)
+//
 byte nibble(const byte *osdata, byte n)
 {
     if (n & 1)
@@ -67,6 +24,24 @@ byte nibble(const byte *osdata, byte n)
     }
 }
 
+//
+// calculate the packet checksum (sum of all nibbles)
+//
+bool checksum(const byte *osdata, byte last, byte check)
+{
+    byte calc = 0;
+
+    for (byte i = 1; i <= last; i++)
+    {
+        calc += nibble(osdata, i);
+    }
+
+    return (check == calc);
+}
+
+//
+// print a buffer in nibble order, with nibbles packed by field
+//
 void print_nibbles(const byte *osdata, size_t len, const char *def)
 {
     static const char digits[] = "0123456789ABCDEF";
@@ -113,14 +88,16 @@ void print_nibbles(const byte *osdata, size_t len, const char *def)
     Serial.println(hexa);
 }
 
-// message 3EA8 or 3EC8
+//
+// message 3EA8 or 3EC8 : clock
+//
 void decode_date_time(const byte *osdata, size_t len)
 {
     if (len < 12)
         return;
 
     byte crc = osdata[11];
-    bool ok = checksum(osdata, 1, 11, crc);
+    bool ok = checksum(osdata, 21, crc);
 
     byte channel = (osdata[2] >> 4);
     byte rolling_code = osdata[3];
@@ -170,7 +147,7 @@ void decode_date_time(const byte *osdata, size_t len)
     Serial.println(buf);
 
     static const char *label[] = {
-        "alwaysA",        // 0    b0    A=1010 - no part of the message
+        "alwaysA",        // 0    b0    A=1010 - not part of the message
         "id_msg",         // 1    b0
         "id_msg",         // 2    b1
         "id_msg",         // 3    b1
@@ -204,14 +181,16 @@ void decode_date_time(const byte *osdata, size_t len)
 #endif
 }
 
-// message 3CCx or 02D1
+//
+// message 3CCx or 02D1: temperature humidity
+//
 void decode_temp_hygro(const byte *osdata, size_t len)
 {
     if (len < 9)
         return;
 
     byte crc = osdata[8];
-    bool ok = checksum(osdata, 1, 8, crc); // checksum = all nibbles 0-15 results is nibbles 16.17
+    bool ok = checksum(osdata, 15, crc); // checksum = nibbles 1-15, result is nibbles 17..16
 
     byte channel = (osdata[2] >> 4);
     byte rolling_code = osdata[3];
@@ -250,14 +229,14 @@ void decode_temp_hygro(const byte *osdata, size_t len)
 #else
     print_nibbles(osdata, len, "141214212");
     char buf[80];
-    snprintf(buf, sizeof(buf), "channel=%d crc=$%02X %s id=%d temp=%.1lf°C hum=%d%% bat=%d %d",
+    snprintf(buf, sizeof(buf), "channel=%d crc=$%02X %s id=%d temp=%.1lf°C hum=%d%% bat=%d",
              channel, crc, ok ? "OK" : "KO", rolling_code,
-             temp / 10., hum, bat, nibble(osdata, 15));
+             temp / 10., hum, bat);
     Serial.println(buf);
 
     static const char *label[] = {
         "alwaysA",              // 0    b0 lsb  always A=1010
-        "id_msg",               // 1    b0 msb  seems to vary
+        "id_msg",               // 1    b0 msb
         "id_msg",               // 2    b1 lsb
         "id_msg",               // 3    b1 msb
         "id_msg",               // 4    b2 lsb
@@ -271,7 +250,7 @@ void decode_temp_hygro(const byte *osdata, size_t len)
         "temperature (sign)",   // 12   b6 lsb
         "humidity (units)",     // 13   b6 msb
         "humidity (tens)",      // 14   b7 lsb
-        "comfort",              // 15   b7 msb  comfort ???   //0: normal, 4: comfortable, 8: dry, C: wet
+        "comfort",              // 15   b7 msb  comfort ??? (according to RFLink) 0: normal, 4: comfortable, 8: dry, C: wet
         "crc",                  // 16   b8 lsb
         "crc",                  // 17   b8 msb
     };
@@ -286,7 +265,10 @@ void decode_temp_hygro(const byte *osdata, size_t len)
 
 void oregon_decode(const byte *osdata, size_t len)
 {
-    if (len < 5)
+    // we need 2 bytes at least
+    //  - the preamble A
+    //  - the ID on four nibbles
+    if (len < 3)
         return;
 
     uint16_t id = (((uint16_t)nibble(osdata, 4)) << 12) +
@@ -295,11 +277,9 @@ void oregon_decode(const byte *osdata, size_t len)
                   (((uint16_t)nibble(osdata, 1)));
 
 #ifndef ARDUINO
-    Serial.println();
-    Serial.print("message: ");
-    Serial.print(id, HEX);
-    Serial.print(" len=");
-    Serial.println(len);
+    char buf[32];
+    snprintf(buf, 32, "message: %04X len=%zu", id, len);
+    Serial.println(buf);
 #endif
 
     if ((id & 0xFFF0) == 0x3CC0 || id == 0x02D1)
