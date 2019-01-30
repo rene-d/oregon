@@ -46,7 +46,7 @@ size_t fromhex(byte *x, size_t max_len, const char *s)
 }
 
 //
-     // dump Oregon Scientific messages from a text file
+// dump Oregon Scientific messages from a text file
 //
 void dump(const char *filename)
 {
