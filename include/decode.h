@@ -1,5 +1,5 @@
 // decode.h
-//
+// rene-d 01/2019
 
 // internal clock, set from OS sensor
 struct
@@ -141,8 +141,9 @@ void decode_date_time(const byte *osdata, size_t len)
     print_nibbles(osdata, len, "14121222211212");
 
     char buf[80];
-    snprintf(buf, sizeof(buf), "channel=%d crc=$%02X %s id=%d date=20%02d/%02d/%02d %02d:%02d:%02d",
+    snprintf(buf, sizeof(buf), "channel=%d crc=$%02X %s id=%d channel=%d state=%d clock=20%02d/%02d/%02d %02d:%02d:%02d",
              channel, crc, ok ? "OK" : "KO", rolling_code,
+             channel, nibble(osdata, 8),
              year, month, day, hour, minute, second);
     Serial.println(buf);
 

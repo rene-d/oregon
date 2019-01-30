@@ -37,7 +37,6 @@ void loop()
     {
         if (orscV2.nextPulse(p))
         {
-
             // Decode Hex Data once
             byte length;
             const byte *osdata = DataToDecoder(orscV2, length);

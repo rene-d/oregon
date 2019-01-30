@@ -36,8 +36,8 @@ In lack of official documentation or clear and verified sources, I cannot know h
 Desc | Content
 ---- | -------
 Bytes received | `DA CC 43 D9 16 08 80 83 64 A0`
-Nibbles | `A DCC3 4 9D 6 1800 83 8 46 0A`
-Decoded | `channel=4 temp=8.1°C hum=38% bat=low`
+Nibbles | `A 3CCD 4 D9 6 0081 38 8 64 0A`
+Decoded | `channel=4 temp=8.1°C hum=38% bat=6`
 
 Nibble | Value
 ------ | -----
@@ -46,9 +46,9 @@ Nibble | Value
    5   | channel
   7-6  | rolling code : a code to identify the sensor, change after many resets
    8   | battery state, bit 3 seems to indicate a low level battery
-  12-9 | temperature in BCD, value in Celsius degrees
- 14-13 | percent of humidity
-   15  | unknown
+  12-9 | temperature in BCD, in Celsius degrees, sign in nibble 12
+ 14-13 | percent of humidity in BCD
+   15  | unknown, maybe comfort indicator (according to RFLink)
  17-16 | checksum (nibbles 1 to 15)
  19-18 | unknown trailing, not always present or misunderstanding of protocol
 
@@ -57,9 +57,9 @@ Nibble | Value
 
 Desc | Content
 ---- | -------
-Bytes received | `8AEC43D97644318212917177CA`
-Nibbles | `A 8CE3 4 9D 6 74 41 32 82 1 1 91 7 77 AC`
-Decoded | `channel=4 clock=2019/01/28 23:14:47`
+Bytes received | `8A EC 43 D9 76 44 31 82 12 91 71 77 CA`
+Nibbles | `A 3EC8 4 D9 6 47 14 23 28 1 1 19 7 77 AC`
+Decoded | `channel=4 state=6 clock=2019/01/28 23:14:47`
 
 Nibble | Value
 ------ | -----
@@ -67,12 +67,12 @@ Nibble | Value
   4-1  | message ID
    5   | channel
   7-6  | rolling code : a code to identify the sensor, change after many resets
-   8   | probably sync state, bit 1 (value 2) indicates a valid date
+   8   | probably sync state, bit 1 indicates that clock is valid
   14-9 | HH:MM:SS in BCD
- 16-15 | day (1-31)
+ 16-15 | day (1-31) in BCD
    17  | month (1-12)
    18  | day of week (0=sunday)
- 20-10 | year
+ 20-10 | year in BCD
    21  | unknown
  23-22 | checksum (nibbles 1 to 21)
  25-24 | unknown trailing, not always present or misunderstanding of protocol

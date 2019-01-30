@@ -1,3 +1,6 @@
+// wrapper of some Arduino functions
+// rene-d 01/2019
+
 #ifndef Arduino_sim_h
 #define Arduino_sim_h
 
