@@ -24,5 +24,5 @@ for i in open("rflink.log"):
 
 for k, v in c.items():
     print(k)
-    for i in v:
+    for i in sorted(v):
         print("  ", i)
